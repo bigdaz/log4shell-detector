@@ -31,7 +31,15 @@ Non-SAML users can authenticate via basic auth.
 1. Create a Gradle Enterprise user with the `Export API` role as described in the [Export API Access Control] documentation.
 2. Set two environment variables locally: `EXPORT_API_USER` `EXPORT_API_PASSWORD` to match the newly created Export API user credentials.
 
-## Sample output
+## Output
+
+All builds processed and their dependencies are logged to the console.
+
+At the end of execution, a summary is printed. The summary shows each unique dependency version, together with the build ID
+of the first scan that loaded that dependency version. You can use this ID to view the respective build scan to get
+more information on the project involved.
+
+### Sample output
 ```
 Streaming builds...
 Processing build: hmvewcdjvsl54
@@ -43,7 +51,7 @@ Processing build: ozvdxgi2yr66e
 
 Processing build: wguszvsvcvysy
 
-VERSION SUMMARY: (Lists first instance found for each version)
+VERSION SUMMARY: (First build scan detected for each version)
 --------------------------------------------------------------
 txfjcwedzacmw: org.apache.logging.log4j:log4j-api:2.11.2
 arp4cremlczjw: org.apache.logging.log4j:log4j-api:2.17.1
