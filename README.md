@@ -11,8 +11,9 @@ To run this sample:
 
 1. Replace the hostname value of the `GRADLE_ENTERPRISE_SERVER` constant in [`ExportApiDependencyExtractor.java`][ExportApiDependencyExtractor] with your Gradle Enterprise hostname.
 2. Optionally change the value of the `DEPENDENCY_GROUP_PREFIX` constant to filter for different dependencies. Set this value to '' to extract _all_ dependency versions.
-3. Set the appropriate authentication environment variables (see below).
-4. Run `./gradlew run` from the command line.
+3. Optionally change the value of the `PROCESS_SCANS_SINCE` constant to extend the range of scans to process. By default, scans published in the past 24 hrs are processed.
+4. Set the appropriate authentication environment variables (see below).
+5. Run `./gradlew run` from the command line.
 
 ### Authentication
 

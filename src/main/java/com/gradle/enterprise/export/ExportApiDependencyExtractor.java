@@ -31,7 +31,9 @@ import static java.time.Instant.now;
 public final class ExportApiDependencyExtractor {
 
     private static final HttpUrl GRADLE_ENTERPRISE_SERVER_URL = HttpUrl.parse("https://ge.solutions-team.gradle.com");
+
     private static final String DEPENDENCY_GROUP_PREFIX = "org.apache.logging.log4j";
+    private static final Duration PROCESS_SCANS_SINCE = Duration.ofHours(24);
 
     private static final String EXPORT_API_USERNAME = System.getenv("EXPORT_API_USER");
     private static final String EXPORT_API_PASSWORD = System.getenv("EXPORT_API_PASSWORD");
@@ -41,7 +43,7 @@ public final class ExportApiDependencyExtractor {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static void main(String[] args) throws Exception {
-        Instant since1Day = now().minus(Duration.ofHours(24));
+        Instant since1Day = now().minus(PROCESS_SCANS_SINCE);
 
         OkHttpClient httpClient = new OkHttpClient.Builder()
                 .connectTimeout(Duration.ZERO)
