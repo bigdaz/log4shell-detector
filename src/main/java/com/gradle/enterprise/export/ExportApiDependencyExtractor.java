@@ -62,10 +62,10 @@ public final class ExportApiDependencyExtractor {
 
         Map<String, String> deps = dependencyExtractor.dependencies.get();
         System.out.println();
-        System.out.println("VERSION SUMMARY: (Lists first instance found for each version)");
+        System.out.println("VERSION SUMMARY: (First Build Scan found for each dependency)");
         System.out.println("--------------------------------------------------------------");
         deps.forEach((dep, buildId) -> {
-            System.out.println(buildId + ": " + dep);
+            System.out.println(GRADLE_ENTERPRISE_SERVER_URL.resolve("/s/" + buildId) + " : " + dep);
         });
 
         // Cleanly shuts down the HTTP client, which speeds up process termination
@@ -157,7 +157,12 @@ public final class ExportApiDependencyExtractor {
                 return;
             }
 
-            List<String> log4jDependencies = StreamSupport.stream(Spliterators.spliteratorUnknownSize(identities.iterator(), Spliterator.ORDERED), false)
+            // Start from components since these are actually resolved
+            List<String> deps = StreamSupport.stream(Spliterators.spliteratorUnknownSize(components.iterator(), Spliterator.ORDERED), false)
+                .map(component -> {
+                    int identityIndex = component.get("identity").asInt();
+                    return identities.get(identityIndex);
+                })
                 .filter(identity -> identity.get("type").asText().startsWith("ModuleComponentIdentity"))
                 .filter(identity -> identity.get("group").asText().startsWith(DEPENDENCY_GROUP_PREFIX))
                 .map(identity -> {
@@ -170,7 +175,7 @@ public final class ExportApiDependencyExtractor {
                 .peek(dependency -> System.out.println(buildId + ": " + dependency))
                 .collect(Collectors.toList());
 
-            dependencyVersions.complete(log4jDependencies);
+            dependencyVersions.complete(deps);
         }
 
         @Override
