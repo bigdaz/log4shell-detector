@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import okhttp3.ConnectionPool;
 import okhttp3.HttpUrl;
@@ -60,16 +61,24 @@ public final class ExportApiDependencyExtractor {
         BuildDependencyExtractor dependencyExtractor = new BuildDependencyExtractor(eventSourceFactory);
         eventSourceFactory.newEventSource(requestBuilds(since1Day), dependencyExtractor);
 
-        Map<String, String> deps = dependencyExtractor.dependencies.get();
-        System.out.println();
-        System.out.println("VERSION SUMMARY: (First Build Scan found for each dependency)");
-        System.out.println("--------------------------------------------------------------");
-        deps.forEach((dep, buildId) -> {
-            System.out.println(GRADLE_ENTERPRISE_SERVER_URL.resolve("/s/" + buildId) + " : " + dep);
-        });
+        formatDependencies(dependencyExtractor.dependencies.get());
 
         // Cleanly shuts down the HTTP client, which speeds up process termination
         shutdown(httpClient);
+    }
+
+    private static void formatDependencies(Map<String, String> deps) {
+        System.out.println();
+        System.out.println("VERSION SUMMARY: (First Build Scan found for each dependency)");
+        System.out.println("--------------------------------------------------------------");
+        if (deps.isEmpty()) {
+            System.out.println("No dependencies found.");
+            return;
+        }
+
+        deps.forEach((dep, buildId) -> {
+            System.out.println(GRADLE_ENTERPRISE_SERVER_URL.resolve("/s/" + buildId) + " : " + dep);
+        });
     }
 
     @NotNull
@@ -128,6 +137,7 @@ public final class ExportApiDependencyExtractor {
 
     private static class SingleBuildDependencyExtractor extends PrintFailuresEventSourceListener {
         public final CompletableFuture<List<String>> dependencyVersions = new CompletableFuture<>();
+        private final List<String> depCollector = Lists.newArrayList();
         private final String buildId;
 
         private SingleBuildDependencyExtractor(String buildId) {
@@ -175,18 +185,28 @@ public final class ExportApiDependencyExtractor {
                 .peek(dependency -> System.out.println(buildId + ": " + dependency))
                 .collect(Collectors.toList());
 
-            dependencyVersions.complete(deps);
+            recordDependencies(deps);
+        }
+
+        private synchronized void recordDependencies(List<String> deps) {
+            // Don't complete until the `onClosed` event to avoid premature closure of stream
+            depCollector.addAll(deps);
         }
 
         @Override
         public void onClosed(@NotNull EventSource eventSource) {
-            dependencyVersions.complete(Collections.emptyList());
+            dependencyVersions.complete(depCollector);
         }
     }
 
     private static class PrintFailuresEventSourceListener extends EventSourceListener {
         @Override
         public void onFailure(@NotNull EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
+            if (response != null && response.code() == 204) {
+                // No content: ignore
+                this.onClosed(eventSource);
+                return;
+            }
             if (t != null) {
                 System.err.println("FAILED: " + t.getMessage());
                 t.printStackTrace();
