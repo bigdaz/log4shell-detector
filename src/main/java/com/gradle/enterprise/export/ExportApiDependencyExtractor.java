@@ -170,7 +170,7 @@ public final class ExportApiDependencyExtractor {
             // Start from components since these are actually resolved
             List<String> deps = StreamSupport.stream(Spliterators.spliteratorUnknownSize(components.iterator(), Spliterator.ORDERED), false)
                 .map(component -> {
-                    int identityIndex = component.get("identity").asInt();
+                    String identityIndex = component.get("identity").asText();
                     return identities.get(identityIndex);
                 })
                 .filter(identity -> identity.get("type").asText().startsWith("ModuleComponentIdentity"))
